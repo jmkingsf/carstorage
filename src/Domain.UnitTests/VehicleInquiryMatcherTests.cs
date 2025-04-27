@@ -330,4 +330,65 @@ public class VehicleInquiryMatcherComprehensiveTests
         var match = locationMatches.First();
         Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
     }
+
+    public async Task Match_FitSmallCarInSpaceAndBigCarAfter()
+    {
+        // arrange
+        List<VehicleInquiry> inquiries =
+        [
+            new VehicleInquiry(22, 1),
+            new VehicleInquiry(21, 1),
+            new VehicleInquiry(5, 1)
+        ];
+
+        _repository.GetLocationsThatFitAdjustedTotalSpaceRequired(0).ReturnsForAnyArgs(Task.FromResult<List<Location>>([
+            new Location
+            {
+                Id = Guid.NewGuid(),
+                Listings =
+                [
+                    new Listing { Length = 27, Width = 20 }
+                ]
+            }
+        ]));
+
+        // act
+        var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
+
+        // assert
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
+        Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
+    }
+
+    [TestMethod]
+    public async Task Match_5Cars_DoNotFit()
+    {
+        // arrange
+        List<VehicleInquiry> inquiries =
+        [
+            new VehicleInquiry(30, 5)
+        ];
+
+        _repository.GetLocationsThatFitAdjustedTotalSpaceRequired(0).ReturnsForAnyArgs(Task.FromResult<List<Location>>([
+            new Location
+            {
+                Id = Guid.NewGuid(),
+                Listings =
+                [
+                    new Listing { Length = 30, Width = 40 }
+                ]
+            }
+        ]));
+
+        // act
+        var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
+
+        // assert
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(0, locationMatches.Count());
+        // var match = locationMatches.First();
+        // Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
+    }
 }

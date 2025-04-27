@@ -7,7 +7,6 @@ namespace Domain
     public class VehicleInquiryMatcherGreedy(ILocationRepository locationRepository) : IVehicleInquiryMatcher
     {
         private const double WastePenaltyFactor = 1;
-        private const double MaxWidthDifferential = 9;
         public async Task<IEnumerable<LocationMatch>> Match(List<VehicleInquiry> vehicleInquiry)
         {
             var matches = new List<LocationMatch>();
@@ -36,12 +35,13 @@ namespace Domain
             var usedListingIds = new List<Guid>();
             long totalPrice = 0;
 
-            var remainingInquiries = sortedInquiries.Slice(0, sortedInquiries.Count);
-            foreach (var inquiry in sortedInquiries)
+            var remainingInquiries = sortedInquiries;
+            while(true)
             {
-                if (!remainingInquiries.Contains(inquiry))
+                var inquiry = remainingInquiries.FirstOrDefault();
+                if (inquiry == null)
                 {
-                    continue;
+                    break;
                 }
 
                 var (bestListing, fits) = FindBestListing(sortedListings, inquiry, remainingInquiries);
@@ -49,12 +49,12 @@ namespace Domain
                 if (bestListing == null)
                     return null; // couldn't fit this car anywhere
 
-                (var anyInquiriesPlaced, remainingInquiries) = fits!.Select(fit => TryPlaceInquiries(remainingInquiries, bestListing, fit)).MinBy(result => result.remainingInquiries.Count);
+                (var anyInquiriesPlaced, remainingInquiries) = fits!.Select(fit => TryPlaceInquiries(remainingInquiries.Select(i => new VehicleInquiry(i.Length, i.Quantity)).ToList(), bestListing, fit)).MinBy(result => result.remainingInquiries.Count);
 
                 // No inquiries could fit
                 if (!anyInquiriesPlaced)
                 {
-                    continue;
+                    break;
                 }
 
                 bestListing.IsUsed = true;
@@ -92,7 +92,7 @@ namespace Domain
                 int carArea = Constants.CarWidth * currentInquiry.Length;
                 int remainingArea = listing.Area - carArea;
 
-                // Predict upcoming need: next 1–2 cars' areas
+                // Predict upcoming need of 1-2 inquiries
                 int nextNeedArea = upcomingInquiries
                     .Skip(1)
                     .Take(2)
@@ -114,73 +114,89 @@ namespace Domain
             return (bestListing, bestFits);
         }
 
-        private (bool anyCarPlaced, List<VehicleInquiry> remainingInquiries) TryPlaceInquiries(List<VehicleInquiry> originalInquiries, Listing listing, Fits fits)
+        private (bool anyCarPlaced, List<VehicleInquiry> remainingInquiries) TryPlaceInquiries(List<VehicleInquiry> inquiries, Listing listing, Fits fits)
         {
             var widthSpaceRemaining = listing.Width;
             var lengthSpaceRemaining = listing.Length;
+
             bool anyCarPlaced = false;
 
-            var remainingInquiries = new List<VehicleInquiry>();
-
-            foreach (var inquiry in originalInquiries)
+            var done = false;
+            while (!done)
             {
-                int carsPlaced = 0;
+                var inquiry = inquiries.FirstOrDefault(i => i.Quantity > 0);
+                if (inquiry == null)
+                    break;
 
-                for (var carIndex = 0; carIndex < inquiry.Quantity; carIndex++)
+                switch (fits)
                 {
-                    bool fitSuccessful = false;
-
-                    switch (fits)
-                    {
-                        case Fits.WidthWays:
-                            widthSpaceRemaining -= inquiry.Length;
-                            if (widthSpaceRemaining < 0 && lengthSpaceRemaining > Constants.CarWidth + MaxWidthDifferential)
-                            {
-                                lengthSpaceRemaining -= Constants.CarWidth;
-                                widthSpaceRemaining = listing.Width - inquiry.Length;
-                            }
-                            break;
-
-                        case Fits.LengthWays:
-                            lengthSpaceRemaining -= inquiry.Length;
-                            if (lengthSpaceRemaining < 0 && widthSpaceRemaining > Constants.CarWidth + MaxWidthDifferential)
-                            {
-                                widthSpaceRemaining -= Constants.CarWidth;
-                                lengthSpaceRemaining = listing.Length - inquiry.Length;
-                            }
-                            break;
-                    }
-
-                    fitSuccessful = widthSpaceRemaining >= 0 && lengthSpaceRemaining >= 0;
-
-                    if (!fitSuccessful)
-                    {
-                        // Revert decrement because car didn't actually fit
-                        switch (fits)
+                    case Fits.WidthWays:
+                        (var widthCanFit, widthSpaceRemaining) = TryFit(inquiry.Length, widthSpaceRemaining);
+                        if (widthCanFit)
                         {
-                            case Fits.WidthWays:
-                                widthSpaceRemaining += inquiry.Length;
-                                break;
-                            case Fits.LengthWays:
-                                lengthSpaceRemaining += inquiry.Length;
-                                break;
+                            anyCarPlaced = true;
+                            inquiry.Quantity -= 1;
+                            continue;
                         }
-                        break; // can't fit more of this inquiry
+                        else if (inquiries.Any(i => widthSpaceRemaining >= i.Length))
+                        {
+                            // cycle through other inquiries to fit in the space
+                            anyCarPlaced = true;
+                            var inquiryThatCanFit = inquiries.First(i => widthSpaceRemaining - i.Length >= 0);
+                            widthSpaceRemaining -= inquiryThatCanFit.Length;
+                            inquiryThatCanFit.Quantity -= 1;
+                            continue;
+                        }
+                        else if (lengthSpaceRemaining > Constants.CarWidth)
+                        {
+                            lengthSpaceRemaining -= Constants.CarWidth;
+                            widthSpaceRemaining = inquiry.Length;
+                            continue;
+                        }
+                        done = true;
+                        break;
+
+                    case Fits.LengthWays:
+                        (var lengthWiseCanFit, lengthSpaceRemaining) = TryFit(inquiry.Length, lengthSpaceRemaining);
+                        if (lengthWiseCanFit)
+                        {
+                            anyCarPlaced = true;
+                            inquiry.Quantity -= 1;
+                            continue;
+                        }
+                        else if (inquiries.Any(i => lengthSpaceRemaining >= i.Length))
+                        {
+                            // cycle through other inquiries to fit in the space
+                            anyCarPlaced = true;
+                            var inquiryThatCanFit = inquiries.First(i => lengthSpaceRemaining - i.Length >= 0);
+                            lengthSpaceRemaining -= inquiryThatCanFit.Length;
+                            inquiryThatCanFit.Quantity -= 1;
+                            continue;
+                        }
+                        else if (widthSpaceRemaining > Constants.CarWidth)
+                        {
+                            widthSpaceRemaining -= Constants.CarWidth;
+                            lengthSpaceRemaining = inquiry.Length;
+                            continue;
+                        }
+                        done = true;
+                        break;
                     }
-
-                    carsPlaced++;
-                    anyCarPlaced = true;
-                }
-
-                if (carsPlaced < inquiry.Quantity)
-                {
-                    // Some or all cars from this inquiry still remain
-                    inquiry.Quantity -= carsPlaced;
-                    remainingInquiries.Add(inquiry);
-                }
             }
 
-            return (anyCarPlaced, remainingInquiries);
+            return (anyCarPlaced, inquiries.Where(i => i.Quantity > 0).ToList());
+        }
+
+        private (bool canFit, int remainingSpace) TryFit(int spaceNeeded, int spaceRemaining)
+        {
+            if (spaceRemaining < spaceNeeded)
+            {
+                return (false, spaceRemaining);
+            }
+            else
+            {
+                return (true, spaceRemaining - spaceNeeded);
+            }
         }
 
         private bool CanFit(Listing listing, VehicleInquiry inquiry, List<Fits> fits)
