@@ -1,6 +1,7 @@
 # Multi-Vehicle Storage Search API
 
-This project implements a search algorithm for finding locations where renters can store multiple vehicles based on size and quantity.  
+This project implements a search algorithm for finding locations where renters can store multiple vehicles based on size and quantity.
+
 Built as part of a technical assessment.
 
 ---
@@ -31,7 +32,7 @@ curl -X POST "https://https://carstorage.azurewebsites.net/" \
 
 ```
 
-## VehicleInquiryMatcher (Exploratory)
+## VehicleInquiryMatcherAllPermutations (Exploratory)
 
 This class represents an early approach to solving the vehicle-to-listing matching problem using exhaustive permutation and recursive fitting strategies.
 
