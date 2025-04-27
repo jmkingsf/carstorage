@@ -32,6 +32,14 @@ curl -X POST "https://https://carstorage.azurewebsites.net/" \
 
 ```
 
+### Execution Time
+
+![Screen shot of speed under 300 milliseconds](./assets/executionTime2.png)
+
+---
+
+![Screen shot of speed under 300 milliseconds](./assets/executionTime1.png)
+
 ## VehicleInquiryMatcherAllPermutations (Exploratory)
 
 This class represents an early approach to solving the vehicle-to-listing matching problem using exhaustive permutation and recursive fitting strategies.
