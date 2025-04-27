@@ -1,4 +1,4 @@
-namespace Domain
+namespace Domain.Models
 {
     public class VehicleInquiry(int length, int quantity)
     {

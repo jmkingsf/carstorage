@@ -1,26 +1,28 @@
-using Domain.DatabasePorts;
 using Domain.Models;
+using Domain.Ports;
+#pragma warning disable CS0618 // Type or member is obsolete
 
-namespace Domain
+namespace Domain.Experimental
 {
     public interface IVehicleInquiryMatcher
     {
         Task<IEnumerable<LocationMatch>> Match(List<VehicleInquiry> vehicleInquiry);
     }
 
-    public class VehicleInquiryMatcher(ILocationRepository locationRepository, IListingRepository listingRepository) : IVehicleInquiryMatcher
+    /// <summary>
+    /// Demonstrates a recursive algorithm for solving the binning problem.
+    /// In the end I discovered I didn't have enough time to try all permutations.
+    /// I left this behind to show my work.
+    /// </summary>
+    /// <param name="locationRepository"></param>
+    public class VehicleInquiryMatcherComprehensive(ILocationRepository locationRepository) : IVehicleInquiryMatcher
     {
         private const int Width = 10;
 
-        // listing state could tell me about of space per line remaining by both width and length
-        // for anything with a similar stat or better I can automatically say yes without continuing processing
         public async Task<IEnumerable<LocationMatch>> Match(List<VehicleInquiry> vehicleInquiry)
         {
             List<LocationMatch> locationMatches = new List<LocationMatch>();
-            // foreach distinct location
-            // check if the vehicle inquery can fit
-            // How would recursion would here? Check if vehicle fits in the listing and check if space exists at the same listing or next location
-            foreach (var location in await locationRepository.GetLocationsThatFitCar(vehicleInquiry.MaxBy(v => v.Length).Length, Width, vehicleInquiry.Sum(v => v.Length * Width)))
+            foreach (var location in await locationRepository.GetLocationsThatFitCar(vehicleInquiry.MaxBy(v => v.Length)!.Length, Width, vehicleInquiry.Sum(v => v.Length * Width)))
             {
                 foreach (var permutation in PermutationGenerator.GetPermutations(location))
                 {

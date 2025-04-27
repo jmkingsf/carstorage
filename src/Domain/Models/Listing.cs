@@ -1,8 +1,6 @@
 using System.Text.Json.Serialization;
 
-using Domain.Models;
-
-namespace Domain
+namespace Domain.Models
 {
     public class Listing
     {

@@ -1,6 +1,6 @@
 using Domain.Models;
 
-namespace Domain
+namespace Domain.Experimental
 {
     public class PermutationGenerator
     {

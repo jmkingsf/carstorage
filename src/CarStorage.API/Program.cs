@@ -1,5 +1,7 @@
 using Domain;
-using Domain.DatabasePorts;
+using Domain.Experimental;
+using Domain.Models;
+using Domain.Ports;
 
 using EFDatabase;
 
@@ -9,7 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services
     .AddDbContext<CarStorageDbContext>()
-    .AddScoped<IListingRepository, ListingRepository>()
     .AddScoped<ILocationRepository, LocationRepository>()
     .AddScoped<IVehicleInquiryMatcher, VehicleInquiryMatcherGreedy>();
 
@@ -24,6 +25,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseExceptionHandler("/error");
+}
 
 app.UseHttpsRedirection();
 
@@ -37,14 +42,16 @@ using (var scope = app.Services.CreateScope())
 
 app.MapPost("/", async (List<VehicleInquiry> vehicleInquiries, IVehicleInquiryMatcher vehicleInquiryMatcher) =>
     {
-        return await vehicleInquiryMatcher.Match(vehicleInquiries).ConfigureAwait(false);
+        if (!vehicleInquiries.Any())
+        {
+            return Results.BadRequest();
+        }
+
+        return Results.Ok(await vehicleInquiryMatcher.Match(vehicleInquiries).ConfigureAwait(false));
     })
     .WithName("Find locations")
     .WithOpenApi();
 
-app.Run();
+app.Map("/error", () => Results.Problem("An error occurred."));
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+app.Run();

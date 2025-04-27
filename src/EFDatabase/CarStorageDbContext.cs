@@ -1,8 +1,4 @@
-﻿using System.Text.Json;
-
-using Domain;
-using Domain.Models;
-
+﻿using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -15,31 +11,7 @@ public class CarStorageDbContext : DbContext
         optionsBuilder
             .UseInMemoryDatabase(databaseName: "CarStorageDb")
             .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.AccidentalEntityType))
-            .UseSeeding((context, _) =>
-            {
-                var existListings = context.Set<Listing>().Any();
-                if (!existListings)
-                {
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    };
-                    using var filestream = new FileStream("./listings.json", FileMode.Open);
-                    var listings = JsonSerializer.Deserialize<List<Listing>>(filestream, options);
-                    listings!.ForEach(l => l.Area = l.Width * l.Length);
-                    context.Set<Listing>().AddRange(listings!);
-
-                    var locations = listings!.GroupBy(l => l.LocationId).Select(g => new Location
-                    {
-                        Id = g.First().LocationId,
-                        Listings = g.ToList(),
-                        TotalSpace = g.ToList().Sum(l => l.Length * l.Width),
-                    });
-                    context.Set<Location>().AddRange(locations);
-
-                    context.SaveChanges();
-                }
-            });
+            .UseSeeding((context, _) => DbSeedFactory.SeedAsync(context));
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -52,4 +24,5 @@ public class CarStorageDbContext : DbContext
     }
 
     public DbSet<Listing> Listings { get; set; }
+    public DbSet<Location> Locations { get; set; }
 }

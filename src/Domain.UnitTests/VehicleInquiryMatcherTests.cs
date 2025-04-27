@@ -1,17 +1,17 @@
-using Domain.DatabasePorts;
 using Domain.Models;
+using Domain.Ports;
 
 using NSubstitute;
 
 namespace Domain.UnitTests;
 
 [TestClass]
-public class VehicleInquiryMatcherTests
+public class VehicleInquiryMatcherComprehensiveTests
 {
     private readonly ILocationRepository _repository = Substitute.For<ILocationRepository>();
-    private VehicleInquiryMatcherGreedy _vehicleInquiryMatcher;
+    private readonly VehicleInquiryMatcherGreedy _vehicleInquiryMatcher;
 
-    public VehicleInquiryMatcherTests()
+    public VehicleInquiryMatcherComprehensiveTests()
     {
         _vehicleInquiryMatcher = new VehicleInquiryMatcherGreedy(_repository);
     }
@@ -132,8 +132,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(2, match.ListingIds.Count); // Used both listings
     }
 
@@ -162,8 +163,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(1, match.ListingIds.Count); // Only one listing needed
     }
 
@@ -222,8 +224,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(3, match.ListingIds.Count); // Each car needed a separate listing
     }
 
@@ -255,8 +258,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
     }
 
@@ -288,8 +292,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
     }
 
@@ -320,8 +325,9 @@ public class VehicleInquiryMatcherTests
         var locationMatchResult = await _vehicleInquiryMatcher.Match(inquiries);
 
         // assert
-        Assert.AreEqual(1, locationMatchResult.Count());
-        var match = locationMatchResult.First();
+        var locationMatches = locationMatchResult.ToList();
+        Assert.AreEqual(1, locationMatches.Count());
+        var match = locationMatches.First();
         Assert.AreEqual(2, match.ListingIds.Count); // Each car needed a separate listing
     }
 }
