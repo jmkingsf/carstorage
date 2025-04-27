@@ -11,7 +11,7 @@ public class CarStorageDbContext : DbContext
         optionsBuilder
             .UseInMemoryDatabase(databaseName: "CarStorageDb")
             .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.AccidentalEntityType))
-            .UseSeeding((context, _) => DbSeedFactory.SeedAsync(context));
+            .UseSeeding((context, _) => DbSeedFactory.Seed(context));
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,7 +22,5 @@ public class CarStorageDbContext : DbContext
             .HasForeignKey(l => l.LocationId)
             .HasPrincipalKey(l => l.Id);
     }
-
-    public DbSet<Listing> Listings { get; set; }
     public DbSet<Location> Locations { get; set; }
 }

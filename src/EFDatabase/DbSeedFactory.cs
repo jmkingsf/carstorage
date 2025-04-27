@@ -7,9 +7,9 @@ namespace EFDatabase;
 
 public static class DbSeedFactory
 {
-    public static async Task SeedAsync(DbContext context)
+    public static void Seed(DbContext context)
     {
-        if (await context.Set<Listing>().AnyAsync())
+        if (context.Set<Listing>().Any())
             return;
 
         var options = new JsonSerializerOptions
@@ -18,7 +18,7 @@ public static class DbSeedFactory
         };
 
         using var fileStream = new FileStream("./listings.json", FileMode.Open);
-        var listings = await JsonSerializer.DeserializeAsync<List<Listing>>(fileStream, options);
+        var listings = JsonSerializer.Deserialize<List<Listing>>(fileStream, options);
         if (listings == null) return;
 
         foreach (var listing in listings)
@@ -26,7 +26,7 @@ public static class DbSeedFactory
             listing.Area = listing.Width * listing.Length;
         }
 
-        await context.Set<Listing>().AddRangeAsync(listings);
+        context.Set<Listing>().AddRange(listings);
 
         var locations = listings
             .GroupBy(l => l.LocationId)
@@ -37,7 +37,7 @@ public static class DbSeedFactory
                 TotalSpace = g.Sum(l => l.Width * l.Length),
             });
 
-        await context.Set<Location>().AddRangeAsync(locations);
-        await context.SaveChangesAsync();
+        context.Set<Location>().AddRange(locations);
+        context.SaveChanges();
     }
 }

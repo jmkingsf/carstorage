@@ -9,7 +9,7 @@ namespace EFDatabase
     {
         public async Task<List<Location>> GetLocationsThatFitCar(int length, int width, int totalSpace)
         {
-            return await carStorageDbContext.Set<Location>()
+            return await carStorageDbContext.Locations
                 .Where(location => location.TotalSpace > totalSpace && location.Listings.Any(l => (l.Length >= length && l.Width >= width) || (l.Length >= width && l.Width >= length)))
                 .Include(l => l.Listings)
                 .ToListAsync();
@@ -18,7 +18,7 @@ namespace EFDatabase
         public async Task<List<Location>> GetLocationsThatFitAdjustedTotalSpaceRequired(int totalSpaceRequired)
         {
             var adjustedTotalSpaceRequired = totalSpaceRequired * 90;
-            return await carStorageDbContext.Set<Location>()
+            return await carStorageDbContext.Locations
                 .Where(location => location.TotalSpace > adjustedTotalSpaceRequired)
                 .Include(l => l.Listings)
                 .ToListAsync();

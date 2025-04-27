@@ -7,6 +7,7 @@ namespace Domain
     public class VehicleInquiryMatcherGreedy(ILocationRepository locationRepository) : IVehicleInquiryMatcher
     {
         private const double WastePenaltyFactor = 1;
+        private const double MaxWidthDifferential = 9;
         public async Task<IEnumerable<LocationMatch>> Match(List<VehicleInquiry> vehicleInquiry)
         {
             var matches = new List<LocationMatch>();
@@ -61,6 +62,7 @@ namespace Domain
                 totalPrice += bestListing.PriceInCents;
             }
 
+            // Not able to place all inquiries or no listings were used
             if (usedListingIds.Count == 0 || remainingInquiries.Count != 0)
                 return null;
 
@@ -132,7 +134,7 @@ namespace Domain
                     {
                         case Fits.WidthWays:
                             widthSpaceRemaining -= inquiry.Length;
-                            if (widthSpaceRemaining < 0 && lengthSpaceRemaining > Constants.CarWidth + 9)
+                            if (widthSpaceRemaining < 0 && lengthSpaceRemaining > Constants.CarWidth + MaxWidthDifferential)
                             {
                                 lengthSpaceRemaining -= Constants.CarWidth;
                                 widthSpaceRemaining = listing.Width - inquiry.Length;
@@ -141,7 +143,7 @@ namespace Domain
 
                         case Fits.LengthWays:
                             lengthSpaceRemaining -= inquiry.Length;
-                            if (lengthSpaceRemaining < 0 && widthSpaceRemaining > Constants.CarWidth + 9)
+                            if (lengthSpaceRemaining < 0 && widthSpaceRemaining > Constants.CarWidth + MaxWidthDifferential)
                             {
                                 widthSpaceRemaining -= Constants.CarWidth;
                                 lengthSpaceRemaining = listing.Length - inquiry.Length;
